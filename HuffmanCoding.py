@@ -1,48 +1,33 @@
 import heapq
-import bitstring
-
+from bitarray import bitarray
 
 # Reading input file in an array
-value = input("Please enter a string:\n")
-value1 = value+'Binary.txt'
-value2 = value+'Answer.txt'
-value = value+'.txt'
+path = input("Please enter file path : ")
 
-print('you will find the encrypted file as :'+value1)
-print('you will find the file after decryption as :'+value2)
-
-f = open(value, 'r')
-read_data = f.read()
-chars = list(read_data)
-
-chars.append('$')
-# printing the array
-# print(chars)
+file = open(path, encoding="utf8")
+data = file.read()
+file.close()
 
 # Calculating the frequency of each element in the array
 Freq = {}
-for char in chars:
+for char in data:
     if char in Freq:
         Freq[char] += 1
     else:
         Freq[char] = 1
 
-# testing the frequency
-# for i in Freq:
-# print(i , Freq[i])
-
 
 # constructing the tree
-class node:
-    def __init__(self, lChild, rChild, Value, Frequency):
-        self.lChild = lChild
-        self.rChild = rChild
-        self.Value = Value
-        self.Frequency = Frequency
+class Node:
+    def __init__(self, left, right, character, frequency):
+        self.left = left
+        self.right = right
+        self.value = character
+        self.frequency = frequency
 
 # Local Comparison to know on which value insert in the heap
     def __lt__(self, other):
-        return self.Frequency<other.Frequency
+        return self.frequency < other.frequency
 
 
 Hp = [None] * len(Freq)
@@ -50,117 +35,74 @@ count = 0
 
 # Creating List Of Nodes
 for i in Freq:
-    
-    Hp[count] = node(None, None, i, Freq[i])
+    Hp[count] = Node(None, None, i, Freq[i])
     count += 1
 
-heapq.heapify(Hp)       # Constructing the heap
+heapq.heapify(Hp)
 
-# Checking if the heap has been sorted correctly
-# for i in range(count):
-#    print(Hp[i].Value) 
- 
+
 # Combine The least two nodes together till we have one node
 while len(Hp) > 1:
     x = heapq.heappop(Hp)
     y = heapq.heappop(Hp)
-    if x.Frequency > y.Frequency:
-        z = node(x, y, None, x.Frequency+y.Frequency)
+    if x.frequency > y.frequency:
+        z = Node(x, y, None, x.frequency+y.frequency)
     else: 
-        z = node(y, x, None, x.Frequency+y.Frequency)
+        z = Node(y, x, None, x.frequency+y.frequency)
     heapq.heappush(Hp, z)
-
-# Checking that all node are combined
-# for i in range(len(Hp)):
-    # print(Hp[i].Frequency)
 
 # Getting the code for every Char
 EnD = {}
 
 
-def Recurse (node, Code = ""):
-   
-    if node.Value == None:
-        # print(node.lChild)
-        # print('left')
-        Recurse(node.lChild, Code=Code+'1')
-        # print('right')
-        Recurse(node.rChild, Code=Code+'0')
-    else:
-        EnD [node.Value] = Code
-        # print('d5alt')
+def recurse(node, code):
+    if node.value is not None:
+        c = bitarray(code)
+        EnD[node.value] = c
         return
+    else:
+        recurse(node.left, code + '1')
+        recurse(node.right, code + '0')
 
 
-Recurse(node= Hp[0])
-
-# print (EnD)
-
-# for i in EnD:
-# print(i , EnD[i])
-
+recurse(Hp[0], '')
 
 # Produce a binary encrypted file
+binary = bitarray()
 
-binary = ''
-for char in chars:
-    binary = binary+EnD[char]
-# print(binary)
+for char in data:
+    binary += EnD[char]
 
-
-def String_To_Byte(text):
-    i = 0
-    solly = bytearray()
-    while i+8 <= len(text):
-        b = text[i:i+8]
-        b = int(b, 2)
-        solly.append(b & 0xff)
-        i += 8
-
-    remain = len(text) - i
-    if remain == 0:
-        return solly
-    b = text[i:]
-    b += '0'*(8-remain)
-    b = int(b, 2)
-    solly.append(b & 0xff)
-    return solly
-
-
-toWrite = String_To_Byte(binary)
-
-a = open(value1, 'wb')
-a.write(toWrite)
+path = path.split('.txt')
+path = path[0]
+a = open(path+'Binary.txt', 'wb')
+a.write(binary)
 a.close()
+
 
 # creating the inverse dictionary
 DecD = {}
-
 for key, value in EnD.items():
-    DecD[value] = key
-
-# print(DecD)
+    DecD[value.to01()] = key
 
 # Decrypting the binary file
+a2 = open(path+'Binary.txt', 'rb')
+toRead = bitarray()
+toRead.fromfile(a2)
+a2.close()
 
-a2 = open(value1, 'r')
-toRead = bitstring.Bits(a2)
-# print(toRead)
-kelma = ''
-
-# print(binary)
-
-f2 = open(value2, 'a')
+word = ''
+string = ''
+f2 = open(path+'Decrypted.txt', 'w')
 for i in toRead:
-    kelma = kelma+str(str(int(i)))
-    # print(i)
-    # print(kelma)
-    if kelma in DecD.keys():
-        # print(DecD[kelma])
-        if DecD[kelma] == '$':
+    word = word + str(int(i))
+    if word in DecD.keys():
+        if DecD[word] == '$':
             break
-        f2.write(DecD[kelma])
-        kelma = ""
+        string += DecD[word]
+        word = ""
+
+f2.write(string)
 
 
 
