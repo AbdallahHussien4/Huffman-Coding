@@ -93,7 +93,7 @@ a2.close()
 
 word = ''
 string = ''
-f2 = open(path+'Decrypted.txt', 'w')
+f2 = open(path+'Decrypted.txt', 'wb')
 for i in toRead:
     word = word + str(int(i))
     if word in DecD.keys():
@@ -102,7 +102,7 @@ for i in toRead:
         string += DecD[word]
         word = ""
 
-f2.write(string)
+f2.write(string.encode('utf-8', 'ignore'))
 
 
 
